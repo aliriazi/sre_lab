@@ -1,0 +1,379 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend-db
+  namespace: app
+data:
+  db.json: |
+    {
+      "entries": [
+        { "id": 1, "title": "Initial project", "description": "Demo entry" }
+      ]
+    }
+  app.py: |
+    from flask import Flask, request, jsonify
+    import json, os
+    DB='/data/db.json'
+    os.makedirs('/data', exist_ok=True)
+    if not os.path.exists(DB):
+        with open(DB,'w') as f:
+            json.dump({'entries':[]}, f)
+
+    def load_db():
+        with open(DB,'r') as f:
+            return json.load(f)
+
+    def save_db(d):
+        with open(DB,'w') as f:
+            json.dump(d, f)
+
+    app = Flask(__name__)
+
+    HTML_TEMPLATE = '''
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Construction Projects</title>
+        <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                padding: 20px;
+            }
+            .container {
+                max-width: 900px;
+                margin: 0 auto;
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                overflow: hidden;
+            }
+            .header {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 40px 20px;
+                text-align: center;
+            }
+            .header h1 {
+                font-size: 2.5em;
+                margin-bottom: 10px;
+            }
+            .header p {
+                font-size: 1.1em;
+                opacity: 0.9;
+            }
+            .content {
+                padding: 40px;
+            }
+            .form-section {
+                background: #f8f9fa;
+                padding: 30px;
+                border-radius: 8px;
+                margin-bottom: 40px;
+            }
+            .form-section h2 {
+                margin-bottom: 20px;
+                color: #333;
+            }
+            .form-group {
+                margin-bottom: 20px;
+            }
+            .form-group label {
+                display: block;
+                margin-bottom: 8px;
+                color: #555;
+                font-weight: 600;
+            }
+            .form-group input, .form-group textarea {
+                width: 100%;
+                padding: 12px;
+                border: 1px solid #ddd;
+                border-radius: 6px;
+                font-size: 1em;
+                font-family: inherit;
+            }
+            .form-group input:focus, .form-group textarea:focus {
+                outline: none;
+                border-color: #667eea;
+                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            }
+            .form-group textarea {
+                resize: vertical;
+                min-height: 100px;
+            }
+            .btn {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                padding: 12px 30px;
+                border-radius: 6px;
+                font-size: 1em;
+                cursor: pointer;
+                font-weight: 600;
+                transition: all 0.3s;
+            }
+            .btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+            }
+            .btn:active {
+                transform: translateY(0);
+            }
+            .entries-section h2 {
+                margin-bottom: 20px;
+                color: #333;
+            }
+            .entry {
+                background: #f8f9fa;
+                padding: 20px;
+                border-radius: 8px;
+                margin-bottom: 15px;
+                border-left: 4px solid #667eea;
+            }
+            .entry h3 {
+                color: #667eea;
+                margin-bottom: 8px;
+            }
+            .entry p {
+                color: #666;
+                margin-bottom: 8px;
+            }
+            .entry .id {
+                font-size: 0.9em;
+                color: #999;
+            }
+            .empty-state {
+                text-align: center;
+                padding: 40px 20px;
+                color: #999;
+            }
+            .loading {
+                text-align: center;
+                padding: 20px;
+                color: #667eea;
+            }
+            .error {
+                background: #fee;
+                color: #c33;
+                padding: 15px;
+                border-radius: 6px;
+                margin-bottom: 20px;
+                border-left: 4px solid #c33;
+            }
+            .success {
+                background: #efe;
+                color: #3c3;
+                padding: 15px;
+                border-radius: 6px;
+                margin-bottom: 20px;
+                border-left: 4px solid #3c3;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🏗️ Construction Projects</h1>
+                <p>Manage your projects efficiently</p>
+            </div>
+            <div class="content">
+                <div id="message"></div>
+                
+                <div class="form-section">
+                    <h2>Add New Project</h2>
+                    <form id="entryForm">
+                        <div class="form-group">
+                            <label for="title">Project Title *</label>
+                            <input type="text" id="title" name="title" required placeholder="Enter project title">
+                        </div>
+                        <div class="form-group">
+                            <label for="description">Description</label>
+                            <textarea id="description" name="description" placeholder="Enter project description"></textarea>
+                        </div>
+                        <button type="submit" class="btn">Add Project</button>
+                    </form>
+                </div>
+
+                <div class="entries-section">
+                    <h2>Projects List</h2>
+                    <div id="entriesList" class="loading">Loading projects...</div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const API_BASE = window.location.origin;
+
+            function showMessage(msg, type = 'info') {
+                const el = document.getElementById('message');
+                el.textContent = msg;
+                el.className = type;
+                setTimeout(() => { el.textContent = ''; el.className = ''; }, 4000);
+            }
+
+            async function loadEntries() {
+                try {
+                    const response = await fetch(`${API_BASE}/entries`);
+                    if (!response.ok) throw new Error('Failed to load entries');
+                    const entries = await response.json();
+                    displayEntries(entries);
+                } catch (error) {
+                    document.getElementById('entriesList').innerHTML = `<div class="error">Error loading entries: ${error.message}</div>`;
+                }
+            }
+
+            function displayEntries(entries) {
+                const container = document.getElementById('entriesList');
+                if (!entries || entries.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No projects yet. Add one above!</div>';
+                    return;
+                }
+                container.innerHTML = entries.map(entry => `
+                    <div class="entry">
+                        <h3>${escapeHtml(entry.title)}</h3>
+                        <p>${escapeHtml(entry.description || 'No description')}</p>
+                        <div class="id">ID: ${entry.id}</div>
+                    </div>
+                `).join('');
+            }
+
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            document.getElementById('entryForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const title = document.getElementById('title').value.trim();
+                const description = document.getElementById('description').value.trim();
+
+                if (!title) {
+                    showMessage('Please enter a title', 'error');
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`${API_BASE}/entries`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ title, description })
+                    });
+                    if (!response.ok) throw new Error('Failed to add entry');
+                    showMessage('Project added successfully!', 'success');
+                    document.getElementById('entryForm').reset();
+                    loadEntries();
+                } catch (error) {
+                    showMessage(`Error: ${error.message}`, 'error');
+                }
+            });
+
+            loadEntries();
+        </script>
+    </body>
+    </html>
+    '''
+
+    @app.route('/')
+    def root():
+        return HTML_TEMPLATE
+
+    @app.route('/entries', methods=['GET'])
+    def list_entries():
+        d = load_db()
+        return jsonify(d['entries'])
+
+    @app.route('/entries', methods=['POST'])
+    def add_entry():
+        d = load_db()
+        body = request.get_json(force=True)
+        next_id = 1
+        if d['entries']:
+            next_id = max(e.get('id',0) for e in d['entries']) + 1
+        entry = {'id': next_id, 'title': body.get('title'), 'description': body.get('description')}
+        d['entries'].append(entry)
+        save_db(d)
+        return jsonify(entry), 201
+
+    if __name__ == '__main__':
+        app.run(host='0.0.0.0', port=9898)
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: app
+  labels:
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/instance: construction-lab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: frontend
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: frontend
+        app.kubernetes.io/instance: construction-lab
+    spec:
+      initContainers:
+      - name: init-copy-db
+        image: busybox
+        command:
+        - sh
+        - -c
+        - |
+          mkdir -p /data
+          cp /config/db.json /data/db.json
+          ls -la /data
+        volumeMounts:
+        - name: db-data
+          mountPath: /data
+        - name: db-config
+          mountPath: /config
+        - name: db-config
+          mountPath: /config
+        - name: db-config
+          mountPath: /config
+      containers:
+      - name: frontend
+        image: python:3.11-slim
+        command:
+        - sh
+        - -c
+        - |
+          set -e
+          pip install --no-cache-dir flask
+          python /config/app.py
+        ports:
+        - containerPort: 9898
+        volumeMounts:
+        - name: db-data
+          mountPath: /data
+      volumes:
+      - name: db-data
+        emptyDir: {}
+      - name: db-config
+        configMap:
+          name: frontend-db
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: app
+  labels:
+    app.kubernetes.io/name: frontend
+    app.kubernetes.io/instance: construction-lab
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: frontend
+  ports:
+  - port: 9898
+    targetPort: 9898

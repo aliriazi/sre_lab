@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: trafficgen
+  namespace: app
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: trafficgen
+        image: curlimages/curl:8.4.0
+        command: ["/bin/sh","-c"]
+        args:
+        - |
+          for i in $(seq 1 60); do
+            for s in frontend project-service inventory-service contractor-service billing-service; do
+              echo "[$(date +%H:%M:%S)] curl http://$s:9898/";
+              curl -sS -o /dev/null -w "%{http_code} %{url_effective}\n" http://$s:9898/ || echo "ERR $s";
+            done;
+            sleep 1;
+          done
+  backoffLimit: 0

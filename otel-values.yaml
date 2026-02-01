@@ -1,0 +1,53 @@
+mode: deployment
+
+image:
+  repository: otel/opentelemetry-collector
+  tag: "0.96.0"
+
+resources:
+  requests:
+    cpu: "100m"
+    memory: "256Mi"
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+
+# Expose Prometheus scrape port as a Service port
+ports:
+  prometheus:
+    enabled: true
+    containerPort: 8889
+    servicePort: 8889
+    protocol: TCP
+
+# Important: enable a Prometheus scrape endpoint from the collector
+config:
+  receivers:
+    otlp:
+      protocols:
+        grpc: {}
+        http: {}
+
+  processors:
+    batch: {}
+
+  exporters:
+    # Prometheus exporter = Prometheus will SCRAPE the collector
+    prometheus:
+      endpoint: "0.0.0.0:8889"
+
+    # keep logging while testing (optional)
+    logging:
+      loglevel: info
+
+  service:
+    telemetry:
+      metrics:
+        address: "0.0.0.0:8887"
+
+    pipelines:
+      metrics:
+        receivers: [otlp]
+        processors: [batch]
+        exporters: [prometheus, logging]
+

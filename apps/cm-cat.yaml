@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: cm-cat
+  namespace: app
+spec:
+  restartPolicy: Never
+  containers:
+  - name: cat
+    image: python:3.11-slim
+    command: ["sh","-c","ls -la /config; echo '---'; python - <<'PY'\nprint(open('/config/app.py').read()[:200])\nPY"]
+    volumeMounts:
+    - name: db-config
+      mountPath: /config
+  volumes:
+  - name: db-config
+    configMap:
+      name: frontend-db
