@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Construction Project Manager</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --bg-primary: #ffffff;
+            --bg-secondary: #f9fafb;
+            --text-primary: #111827;
+            --text-secondary: #6b7280;
+            --border-color: #e5e7eb;
+            --accent: #111827;
+        }
+        
+        body.dark {
+            --bg-primary: #1f2937;
+            --bg-secondary: #111827;
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --border-color: #374151;
+            --accent: #60a5fa;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            transition: all 0.3s;
+        }
+        
+        .header {
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 30px;
+        }
+        
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            max-width: 1300px;
+            margin: 0 auto 25px;
+        }
+        
+        .header h1 { font-size: 2em; }
+        
+        .theme-btn {
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1.2em;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 20px;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+        
+        .stat { text-align: center; }
+        .stat-num { font-size: 1.6em; font-weight: 700; color: var(--accent); }
+        .stat-label { font-size: 0.85em; color: var(--text-secondary); margin-top: 5px; }
+        
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            padding: 30px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .search { flex: 1; min-width: 200px; }
+        .search input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border-radius: 6px;
+        }
+        
+        .filters { display: flex; gap: 10px; }
+        .filter-btn {
+            padding: 8px 16px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .filter-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+        
+        .btn-add {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 24px;
+        }
+        
+        .card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 24px;
+            transition: all 0.2s;
+        }
+        
+        .card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 16px;
+        }
+        
+        .card-title { font-size: 1.1em; font-weight: 600; }
+        
+        .badge {
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        
+        .badge-planning { background: #e0e7ff; color: #3730a3; }
+        .badge-inprogress { background: #fef3c7; color: #92400e; }
+        .badge-completed { background: #d1fae5; color: #065f46; }
+        .badge-onhold { background: #fee2e2; color: #991b1b; }
+        
+        body.dark .badge-planning { background: rgba(96,165,250,0.2); color: #60a5fa; }
+        body.dark .badge-inprogress { background: rgba(251,146,60,0.2); color: #fb923c; }
+        body.dark .badge-completed { background: rgba(34,197,94,0.2); color: #22c55e; }
+        body.dark .badge-onhold { background: rgba(239,68,68,0.2); color: #ef4444; }
+        
+        .meta { font-size: 0.9em; color: var(--text-secondary); margin-bottom: 16px; }
+        .meta-row { margin-bottom: 5px; }
+        .meta strong { color: var(--text-primary); font-weight: 600; }
+        
+        .progress {
+            margin-bottom: 16px;
+        }
+        
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85em;
+            margin-bottom: 6px;
+            color: var(--text-secondary);
+        }
+        
+        .progress-bar {
+            height: 6px;
+            background: var(--border-color);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+        }
+        
+        .budget {
+            font-size: 0.9em;
+            padding: 12px;
+            background: var(--bg-secondary);
+            border-radius: 6px;
+            margin-bottom: 16px;
+        }
+        
+        .budget-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+        }
+        
+        .budget-row strong { color: var(--text-primary); }
+        
+        .actions {
+            display: flex;
+            gap: 8px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 16px;
+        }
+        
+        .action-btn {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        
+        .action-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        
+        .empty { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
+        .message {
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid;
+        }
+        
+        .msg-success { background: #d1fae5; color: #065f46; border-color: #10b981; }
+        .msg-error { background: #fee2e2; color: #991b1b; border-color: #ef4444; }
+        
+        body.dark .msg-success { background: rgba(34,197,94,0.2); color: #22c55e; }
+        body.dark .msg-error { background: rgba(239,68,68,0.2); color: #ef4444; }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.show { display: flex; }
+        
+        .modal-content {
+            background: var(--bg-primary);
+            border-radius: 12px;
+            padding: 40px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            font-size: 1.5em;
+            font-weight: 600;
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border-radius: 6px;
+            font-family: inherit;
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .modal-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 30px;
+        }
+        
+        .btn-cancel {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        
+        .btn-submit {
+            flex: 1;
+            padding: 12px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-top">
+            <h1>🏗️ Construction Project Manager</h1>
+            <button class="theme-btn" onclick="toggleTheme()">🌙</button>
+        </div>
+        <div class="stats">
+            <div class="stat"><div class="stat-num" id="total">0</div><div class="stat-label">Projects</div></div>
+            <div class="stat"><div class="stat-num" id="active">0</div><div class="stat-label">In Progress</div></div>
+            <div class="stat"><div class="stat-num" id="completed">0</div><div class="stat-label">Completed</div></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div id="message"></div>
+        
+        <div class="controls">
+            <div class="search">
+                <input type="text" id="search" placeholder="Search projects..." onkeyup="display()">
+            </div>
+            <div class="filters">
+                <button class="filter-btn active" onclick="setFilter('all')">All</button>
+                <button class="filter-btn" onclick="setFilter('In Progress')">Active</button>
+                <button class="filter-btn" onclick="setFilter('Completed')">Done</button>
+            </div>
+            <button class="btn-add" onclick="addModal()">+ Add</button>
+        </div>
+
+        <div class="grid" id="grid"><div class="empty">Loading...</div></div>
+    </div>
+
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span id="modaltitle">Add Project</span>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="form" onsubmit="save(event)">
+                <div class="form-group">
+                    <label>Name *</label>
+                    <input type="text" id="name" required>
+                </div>
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="desc"></textarea>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Location</label><input type="text" id="loc"></div>
+                    <div class="form-group"><label>Manager</label><input type="text" id="mgr"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Status</label><select id="status"><option>Planning</option><option>In Progress</option><option>On Hold</option><option>Completed</option></select></div>
+                    <div class="form-group"><label>Progress %</label><input type="number" id="prog" min="0" max="100"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Start</label><input type="date" id="start"></div>
+                    <div class="form-group"><label>End</label><input type="date" id="end"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Budget $</label><input type="number" id="budget"></div>
+                    <div class="form-group"><label>Spent $</label><input type="number" id="spent"></div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn-submit">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        let projects = [];
+        let filter = 'all';
+        let editId = null;
+
+        if (localStorage.theme === 'dark') {
+            document.body.classList.add('dark');
+            document.querySelector('.theme-btn').textContent = '☀️';
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark');
+            localStorage.theme = document.body.classList.contains('dark') ? 'dark' : 'light';
+            document.querySelector('.theme-btn').textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+        }
+
+        async function load() {
+            try {
+                const res = await fetch('/api/projects');
+                projects = await res.json();
+                updateStats();
+                display();
+            } catch (e) {
+                msg('Error loading projects', 'error');
+            }
+        }
+
+        function updateStats() {
+            document.getElementById('total').textContent = projects.length;
+            document.getElementById('active').textContent = projects.filter(p => p.status === 'In Progress').length;
+            document.getElementById('completed').textContent = projects.filter(p => p.status === 'Completed').length;
+        }
+
+        function display() {
+            const q = document.getElementById('search').value.toLowerCase();
+            const filtered = projects.filter(p => {
+                const matchFilter = filter === 'all' || p.status === filter;
+                const matchSearch = p.name.toLowerCase().includes(q) || (p.description && p.description.toLowerCase().includes(q));
+                return matchFilter && matchSearch;
+            });
+
+            const grid = document.getElementById('grid');
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="empty">No projects found</div>';
+                return;
+            }
+
+            grid.innerHTML = filtered.map(p => {
+                const badge = 'badge-' + p.status.toLowerCase().replace(' ', '');
+                const remaining = (p.budget || 0) - (p.spent || 0);
+                return `
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">${esc(p.name)}</div>
+                            <div class="badge ${badge}">${p.status}</div>
+                        </div>
+                        <div class="meta">
+                            <div class="meta-row"><strong>Manager:</strong> ${p.manager || 'N/A'}</div>
+                            <div class="meta-row"><strong>Location:</strong> ${p.location || 'N/A'}</div>
+                            ${p.start_date ? `<div class="meta-row"><strong>Dates:</strong> ${p.start_date} to ${p.end_date || 'TBD'}</div>` : ''}
+                        </div>
+                        <div class="progress">
+                            <div class="progress-label"><span>Progress</span><span>${p.progress || 0}%</span></div>
+                            <div class="progress-bar"><div class="progress-fill" style="width: ${p.progress || 0}%"></div></div>
+                        </div>
+                        <div class="budget">
+                            <div class="budget-row"><span>Budget:</span><span>$${(p.budget || 0).toLocaleString()}</span></div>
+                            <div class="budget-row"><span>Spent:</span><span>$${(p.spent || 0).toLocaleString()}</span></div>
+                            <div class="budget-row"><strong>Remaining: $${remaining.toLocaleString()}</strong></div>
+                        </div>
+                        <div class="actions">
+                            <button class="action-btn" onclick="editModal(${p.id})">✏️ Edit</button>
+                            <button class="action-btn" onclick="del(${p.id})">🗑️ Delete</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function esc(t) {
+            const d = document.createElement('div');
+            d.textContent = t || '';
+            return d.innerHTML;
+        }
+
+        function addModal() {
+            editId = null;
+            document.getElementById('modaltitle').textContent = 'Add Project';
+            document.getElementById('form').reset();
+            document.getElementById('modal').classList.add('show');
+        }
+
+        function editModal(id) {
+            editId = id;
+            const p = projects.find(x => x.id === id);
+            if (!p) return;
+            
+            document.getElementById('modaltitle').textContent = 'Edit Project';
+            document.getElementById('name').value = p.name || '';
+            document.getElementById('desc').value = p.description || '';
+            document.getElementById('loc').value = p.location || '';
+            document.getElementById('mgr').value = p.manager || '';
+            document.getElementById('status').value = p.status || 'Planning';
+            document.getElementById('prog').value = p.progress || 0;
+            document.getElementById('start').value = p.start_date || '';
+            document.getElementById('end').value = p.end_date || '';
+            document.getElementById('budget').value = p.budget || '';
+            document.getElementById('spent').value = p.spent || '';
+            document.getElementById('modal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('show');
+        }
+
+        async function save(e) {
+            e.preventDefault();
+            
+            const data = {
+                name: document.getElementById('name').value,
+                description: document.getElementById('desc').value,
+                location: document.getElementById('loc').value,
+                manager: document.getElementById('mgr').value,
+                status: document.getElementById('status').value,
+                progress: parseInt(document.getElementById('prog').value) || 0,
+                start_date: document.getElementById('start').value || null,
+                end_date: document.getElementById('end').value || null,
+                budget: parseFloat(document.getElementById('budget').value) || 0,
+                spent: parseFloat(document.getElementById('spent').value) || 0
+            };
+
+            try {
+                const method = editId ? 'PUT' : 'POST';
+                const url = editId ? `/api/projects/${editId}` : '/api/projects';
+                
+                const res = await fetch(url, {
+                    method, headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!res.ok) throw new Error('Save failed');
+                msg(editId ? 'Updated!' : 'Created!', 'success');
+                closeModal();
+                load();
+            } catch (e) {
+                msg('Error: ' + e.message, 'error');
+            }
+        }
+
+        async function del(id) {
+            if (!confirm('Delete this project?')) return;
+            try {
+                const res = await fetch(`/api/projects/${id}`, { method: 'DELETE' });
+                if (!res.ok) throw new Error('Delete failed');
+                msg('Deleted!', 'success');
+                load();
+            } catch (e) {
+                msg('Error: ' + e.message, 'error');
+            }
+        }
+
+        function setFilter(f) {
+            filter = f;
+            document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+            event.target.classList.add('active');
+            display();
+        }
+
+        function msg(text, type) {
+            const el = document.getElementById('message');
+            el.textContent = text;
+            el.className = 'message ' + (type === 'error' ? 'msg-error' : 'msg-success');
+            setTimeout(() => { el.textContent = ''; el.className = ''; }, 4000);
+        }
+
+        window.addEventListener('click', (e) => {
+            if (e.target === document.getElementById('modal')) closeModal();
+        });
+
+        load();
+    </script>
+</body>
+</html>
