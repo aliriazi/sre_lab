@@ -327,6 +327,35 @@ data:
                 gap: 15px;
             }
             
+            .date-input-wrapper {
+                position: relative;
+                display: flex;
+                align-items: center;
+            }
+            
+            input[type="date"] {
+                padding-right: 36px !important;
+                cursor: pointer;
+            }
+            
+            .date-input-wrapper::after {
+                content: "📅";
+                position: absolute;
+                right: 12px;
+                font-size: 1.1em;
+                pointer-events: none;
+                color: var(--text-secondary);
+            }
+            
+            input[type="date"]::-webkit-calendar-picker-indicator {
+                cursor: pointer;
+                opacity: 0;
+                position: absolute;
+                right: 0;
+                width: 100%;
+                height: 100%;
+            }
+            
             .modal-actions {
                 display: flex;
                 gap: 10px;
@@ -411,8 +440,18 @@ data:
                         <div class="form-group"><label>Progress %</label><input type="number" id="prog" min="0" max="100"></div>
                     </div>
                     <div class="form-row">
-                        <div class="form-group"><label>Start</label><input type="date" id="start"></div>
-                        <div class="form-group"><label>End</label><input type="date" id="end"></div>
+                        <div class="form-group">
+                            <label>Start Date</label>
+                            <div class="date-input-wrapper">
+                                <input type="date" id="start">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>End Date</label>
+                            <div class="date-input-wrapper">
+                                <input type="date" id="end">
+                            </div>
+                        </div>
                     </div>
                     <div class="form-row">
                         <div class="form-group"><label>Budget $</label><input type="number" id="budget"></div>
